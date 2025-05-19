@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profit Chain System</title>
+    <style>
+        /* Yellow-Black Theme */
+        body { background: #000; color: #FFD700; font-family: Arial; padding: 20px; }
+        button { background: #FFD700; color: #000; padding: 10px; border: none; margin: 5px; }
+        table { border: 2px solid #FFD700; width: 100%; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #FFD700; }
+        .referral-box { background: #333; padding: 15px; margin: 10px 0; }
+    </style>
+    <script src="https://cdn.ethers.io/lib/ethers-5.6.umd.min.js"></script>
+</head>
+<body>
+    <h1>💰 Profit Chain System</h1>
+
+    <!-- Connect Wallet -->
+    <button onclick="connectWallet()">🔗 Connect Wallet</button>
+
+    <!-- Dashboard (Hidden Initially) -->
+    <div id="dashboard" style="display:none;">
+        <!-- Referral Section -->
+        <div class="referral-box">
+            <h3>Your Referral Link:</h3>
+            <input type="text" id="referralLink" readonly style="width:500px; padding:5px;">
+            <button onclick="copyLink()">📋 Copy Link</button>
+        </div>
+
+        <!-- Income Stats -->
+        <h3>📊 Your Earnings:</h3>
+        <table>
+            <tr><th>Source</th><th>Amount (POL)</th></tr>
+            <tr><td>Direct Referrals</td><td id="directIncome">0</td></tr>
+            <tr><td>Upline Team</td><td id="uplineIncome">0</td></tr>
+            <tr><td>Royalty Income</td><td id="royaltyIncome">0</td></tr>
+        </table>
+
+        <!-- Team Stats -->
+        <h3>👥 Your Team:</h3>
+        <p>Total Members: <span id="teamSize">0</span></p>
+        <p>Direct Referrals: <span id="directReferrals">0</span></p>
+
+        <!-- Level Upgrade -->
+        <h3>🚀 Upgrade Level:</h3>
+        <select id="levelSelect">
+            <option value="1">Level 1 (2 POL)</option>
+            <option value="2">Level 2 (4 POL)</option>
+            <option value="3">Level 3 (8 POL)</option>
+            <!-- Add more levels... -->
+        </select>
+        <button onclick="upgradeLevel()">UPGRADE</button>
+    </div>
+
+    <script>
+        // Contract Details (Replace with yours)
+        const CONTRACT_ADDRESS = "0xYOUR_DEPLOYED_CONTRACT_ADDRESS";
+        const ABI = [ /* Paste your ABI array here */ ];
+
+        let contract;
+
+        // Connect Wallet
+        async function connectWallet() {
+            if (!window.ethereum) return alert("Install MetaMask!");
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            document.getElementById("dashboard").style.display = "block";
+            updateReferralLink();
+            fetchStats();
+        }
+
+        // Generate Referral Link
+        function updateReferralLink() {
+            const address = window.ethereum?.selectedAddress || "0x...";
+            document.getElementById("referralLink").value = 
+              `${window.location.href}?ref=${address}`;
+        }
+
+        // Copy Link
+        function copyLink() {
+            const link = document.getElementById("referralLink");
+            link.select();
+            document.execCommand("copy");
+            alert("Copied!");
+        }
+
+        // Fetch User Stats
+        async function fetchStats() {
+            const user = await contract.users(window.ethereum.selectedAddress);
+            document.getElementById("directReferrals").textContent = user.directReferrals.length;
+            document.getElementById("teamSize").textContent = user.teamSize;
+        }
+
+        // Upgrade Level
+        async function upgradeLevel() {
+            const level = document.getElementById("levelSelect").value;
+            const fee = await contract.levelFees(level - 1);
+            await contract.upgradeLevel(level, { value: fee });
+            alert("Upgraded to Level " + level);
+        }
+    </script>
+</body>
+</html>
